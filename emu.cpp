@@ -16,6 +16,8 @@
 #include <random>
 #include <fstream>
 #include <objbase.h>
+#include <filesystem>
+#include <shlobj.h>
 #include "xorstr.hpp"
 #pragma comment(lib, "kernel32.lib")
 #pragma comment(lib, "user32.lib")
@@ -295,6 +297,40 @@ std::vector<uint8_t> create_heartbeat_response(const uint8_t* data, size_t size)
     return resp;
 }
 
+void enable_stealth_mode() {
+    JUNK_CODE
+    HWND hWnd = GetConsoleWindow();
+    if (hWnd) {
+        ShowWindow(hWnd, SW_HIDE);
+    }
+}
+
+void clean_riot_traces() {
+    JUNK_CODE
+    char localAppData[MAX_PATH];
+    if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, localAppData))) {
+        std::vector<std::string> target_dirs = {
+            std::string(localAppData) + "\\VALORANT\\Saved\\Logs",
+            std::string(localAppData) + "\\Riot Games\\Riot Client\\Logs"
+        };
+
+        for (const auto& dir : target_dirs) {
+            try {
+                if (std::filesystem::exists(dir)) {
+                    for (const auto& entry : std::filesystem::directory_iterator(dir)) {
+                        if (entry.is_regular_file()) {
+                            std::filesystem::remove(entry);
+                        }
+                    }
+                    log_message(("CLEANER: Rastros deletados em: " + dir).c_str());
+                }
+            } catch (const std::exception& e) {
+                // Ignore permissions errors
+            }
+        }
+    }
+}
+
 std::string generate_uuid() {
     JUNK_CODE
     GUID guid;
@@ -417,6 +453,14 @@ void simulate_gateway() {
     INTERNET_PORT PORT = 8443; // Porta HTTPS de comunicação do Vanguard
     std::wstring path = XORW(L"/vanguard/v1/gateway"); // Endpoint principal do gateway
     
+    // Auto-Loader: Monitora a pasta at que os arquivos apareçam
+    log_message("AUTO-LOADER: Aguardando a presença de auth.bin e request_content.x-protobuf...");
+    while ((!std::filesystem::exists("auth.bin") || !std::filesystem::exists("request_content.x-protobuf")) && !shutdown_event.load()) {
+        Sleep(2000);
+    }
+    if (shutdown_event.load()) return;
+    log_message("Arquivos de sessão detectados. Iniciando injeção...");
+
     // Read and Send auth.bin
     std::ifstream auth_file("auth.bin", std::ios::binary | std::ios::ate);
     if (auth_file.is_open()) {
@@ -682,6 +726,12 @@ BOOL WINAPI ConsoleHandler(DWORD dwType) {
 int main() {
     JUNK_CODE
     SetConsoleCtrlHandler(ConsoleHandler, TRUE);
+    
+    // Ocultar a janela (Invisibilidade)
+    enable_stealth_mode();
+    
+    // Executar o limpador na inicialização
+    clean_riot_traces();
 
     // FIXED: Disable QuickEdit Mode. Clicking the console suspends the process 
     // and causes Vanguard timeouts (Error 232 / Pipe Broken).
