@@ -19,6 +19,7 @@
 #include <filesystem>
 #include <shlobj.h>
 #include "xorstr.hpp"
+#include "driver_interface.hpp"
 #pragma comment(lib, "kernel32.lib")
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "winhttp.lib")
@@ -732,6 +733,14 @@ int main() {
     
     // Executar o limpador na inicialização
     clean_riot_traces();
+
+    // Inicializar ponte com o Driver (Ring-0)
+    DriverLink kernelLink;
+    if (kernelLink.Initialize()) {
+        log_message("KERNEL: Comunicação com o Driver estabelecida (IOCTL)!");
+    } else {
+        log_message("KERNEL: Aviso - Driver não encontrado. Rodando apenas em Usermode.");
+    }
 
     // FIXED: Disable QuickEdit Mode. Clicking the console suspends the process 
     // and causes Vanguard timeouts (Error 232 / Pipe Broken).
