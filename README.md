@@ -55,7 +55,4 @@ O projeto também acompanha ferramentas nativas em **PowerShell** para facilitar
 
 ---
 
-> **Aviso Legal:**
-> Este projeto foi desenvolvido para fins **educacionais, depuração e pesquisa de segurança da informação** a respeito da estrutura Client-Server do Vanguard. O autor não encoraja ou endossa o uso desta ferramenta com o intuito de violar Termos de Serviço em ambientes competitivos online.
-
-*Feito com 💜 e dedicação de segurança cibernética por realsoninho.*
+*Feito com 💜 por realsoninho.*
